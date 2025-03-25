@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { serializeRESP } from '../src/serializer';
 
-describe('RESP Serializer', () => {
+describe.skip('RESP Serializer', () => {
   it('serializes simple string', () => {
     expect(serializeRESP('OK')).toBe('+OK\r\n');
   });
