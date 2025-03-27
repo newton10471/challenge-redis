@@ -30,7 +30,7 @@ describe('RESP Parser', () => {
     expect(parseRESP('*2\r\n$3\r\nget\r\n$3\r\nkey\r\n')).toEqual(['get', 'key']);
   });
 
-  // it('throws on malformed input', () => {
-  //   expect(() => parseRESP('*2\r\n$3\r\nbad')).toThrow();
-  // });
+  it('throws on malformed input', () => {
+    expect(() => parseRESP('*2\r\n$3\r\nbad')).toThrow();
+  });
 });

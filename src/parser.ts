@@ -37,20 +37,38 @@ function parseBulkString(input: string): string | null {
 }
 
 function parseArray(input: string): any[] | null {
+  console.log("INPUT: ", input);
   const length = Number(input.slice(1, input.indexOf('\r\n')));
+  if (isNaN(length)) {
+    throw new Error("Malformed input: Invalid array length");
+  }
   if (length === -1) {
     return null;
   }
+
   let start = input.indexOf('\r\n') + 2;
   const result = [];
   for (let i = 0; i < length; i++) {
-    const item = parseRESP(input.slice(start));
+    const remainingInput = input.slice(start);
+    if (!remainingInput) {
+      throw new Error("Malformed input: Unexpected end of input");
+    }
+
+    const item = parseRESP(remainingInput);
+    if (item === null && remainingInput[0] !== '$') {
+      throw new Error("Malformed input: Invalid item in array");
+    }
+
     result.push(item);
 
     // Update `start` to point to the next item
-    const itemLength = input.slice(start).indexOf('\r\n') + 2;
-    start += itemLength + (itemLength > 0 ? input.slice(start + itemLength).indexOf('\r\n') + 2 : 0);
+    const itemLength = remainingInput.indexOf('\r\n') + 2;
+    if (itemLength <= 1) {
+      throw new Error("Malformed input: Missing CRLF after item");
+    }
+    start += itemLength + (remainingInput.slice(itemLength).indexOf('\r\n') + 2);
   }
+
   return result;
 }
 
