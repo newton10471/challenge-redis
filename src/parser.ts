@@ -43,12 +43,13 @@ function parseArray(input: string): any[] | null {
   }
   let start = input.indexOf('\r\n') + 2;
   const result = [];
-  let i = 0;
-  while (i < length) {
+  for (let i = 0; i < length; i++) {
     const item = parseRESP(input.slice(start));
     result.push(item);
-    start += input.indexOf('\r\n') + 2;
-    i++;
+
+    // Update `start` to point to the next item
+    const itemLength = input.slice(start).indexOf('\r\n') + 2;
+    start += itemLength + (itemLength > 0 ? input.slice(start + itemLength).indexOf('\r\n') + 2 : 0);
   }
   return result;
 }
