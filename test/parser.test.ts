@@ -14,8 +14,7 @@ describe('RESP Parser', () => {
     expect(parseRESP('$5\r\nhello\r\n')).toEqual('hello');
   });
 
-  it.skip('parses null array', () => {
-    console.log("THIS SHOULD NOT RUN");
+  it('parses null array', () => {
     expect(parseRESP('*-1\r\n')).toEqual(null);
   });
 
@@ -23,7 +22,7 @@ describe('RESP Parser', () => {
     expect(parseRESP('*1\r\n$4\r\nping\r\n')).toEqual(['ping']);
   });
 
-  it.skip('parses ECHO command', () => {
+  it('parses ECHO command', () => {
     expect(parseRESP('*2\r\n$4\r\necho\r\n$11\r\nhello world\r\n')).toEqual(['echo', 'hello world']);
   });
 

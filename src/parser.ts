@@ -36,8 +36,11 @@ function parseBulkString(input: string): string | null {
   return input.slice(start, start + length);
 }
 
-function parseArray(input: string): any[] {
+function parseArray(input: string): any[] | null {
   const length = Number(input.slice(1, input.indexOf('\r\n')));
+  if (length === -1) {
+    return null;
+  }
   let start = input.indexOf('\r\n') + 2;
   const result = [];
   let i = 0;
