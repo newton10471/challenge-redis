@@ -19,13 +19,13 @@ function parseSimpleString(input: string): string {
   return input.slice(1, -2);
 }
 
-//function parseError(input: string): Error {
-//  return new Error(input.slice(1, -2));
-//}
+function parseError(input: string): Error {
+ return new Error(input.slice(1, -2));
+}
 
-//function parseInteger(input: string): number {
-//  return Number(input.slice(1, -2));
-//}
+function parseInteger(input: string): number {
+ return Number(input.slice(1, -2));
+}
 
 function parseBulkString(input: string): string | null {
   const length = Number(input.slice(1, input.indexOf('\r\n')));
