@@ -1,75 +1,82 @@
-function parseRESP(input: string): any {
-  switch (input[0]) {
-    case '+': // simple string
-      return parseSimpleString(input);
-    case '-': // error
-      return parseError(input);
-    case ':': // integer
-      return parseInteger(input);
-    case '$': // bulk string
-      return parseBulkString(input);
-    case '*': // array
-      return parseArray(input);
-    default:
-      return null;
+import { U } from "vitest/dist/chunks/environment.d.C8UItCbf.js";
+
+class SimpleString {
+  private readonly encoder = new TextEncoder();
+
+  constructor(public data: string) {
+    this.data = data;
+  }
+
+  encode(): Uint8Array {
+    return this.encoder.encode(`+${this.data}\r\n`);
   }
 }
 
-function parseSimpleString(input: string): string {
-  return input.slice(1, -2);
-}
+class Parser {
+  private _position: number;
 
-function parseError(input: string): Error {
- return new Error(input.slice(1, -2));
-}
+  constructor(private _buffer: Uint8Array) {
+    console.log("BUFFER1: ", _buffer);
 
-function parseInteger(input: string): number {
- return Number(input.slice(1, -2));
-}
-
-function parseBulkString(input: string): string | null {
-  const length = Number(input.slice(1, input.indexOf('\r\n')));
-  if (length === -1) {
-    return null;
-  }
-  const start = input.indexOf('\r\n') + 2;
-  return input.slice(start, start + length);
-}
-
-function parseArray(input: string): any[] | null {
-  console.log("INPUT: ", input);
-  const length = Number(input.slice(1, input.indexOf('\r\n')));
-  if (isNaN(length)) {
-    throw new Error("Malformed input: Invalid array length");
-  }
-  if (length === -1) {
-    return null;
+    this._buffer = _buffer;
+    this._position = 0;
   }
 
-  let start = input.indexOf('\r\n') + 2;
-  const result = [];
-  for (let i = 0; i < length; i++) {
-    const remainingInput = input.slice(start);
-    if (!remainingInput) {
-      throw new Error("Malformed input: Unexpected end of input");
+  parse_frame(): string {
+    const [msg, pos] = this.parse_msg();
+    return msg.data;
+  }
+
+  parse_msg(): any {
+    console.log("BUFFER2: ", this._buffer);
+    const type = this._buffer[this._position];
+    console.log("TYPE: ", type);
+    switch (type) {
+      case "+": 
+        return this.parse_simple_string();
+      default:
+        throw new Error(`Unknown RESP type: ${type}`);
     }
-
-    const item = parseRESP(remainingInput);
-    if (item === null && remainingInput[0] !== '$') {
-      throw new Error("Malformed input: Invalid item in array");
-    }
-
-    result.push(item);
-
-    // Update `start` to point to the next item
-    const itemLength = remainingInput.indexOf('\r\n') + 2;
-    if (itemLength <= 1) {
-      throw new Error("Malformed input: Missing CRLF after item");
-    }
-    start += itemLength + (remainingInput.slice(itemLength).indexOf('\r\n') + 2);
   }
 
-  return result;
+  parse_simple_string(): [SimpleString | null, number] {
+    const start = this._position + 1;
+    this._advance();
+    this._parse_text();
+    const end = this._parse_eos();
+    if (end !== -1) {
+      const simpleString = new SimpleString(this._buffer.slice(start, this._position - 2));
+      return [simpleString, this._position];
+    }
+    return [null, 0];
+  }
+
+  _advance(n: number = 1): void {
+    this._position += n;
+  }
+
+  // Helper function to check if a character is alphanumeric, intentionally synonymouse with Python's str.isalnum()
+  private _isAlnum(char: string): boolean {
+    return /^[a-zA-Z0-9]$/.test(char);
+  }
+
+  _parse_text(): void {
+    while (
+      this._position < this._buffer.length - 1 &&
+      this._isAlnum(this._buffer[this._position])
+    ) {
+      this._advance();
+    }
+  }
+
+  _parse_eos(): number {
+    if (this._buffer.slice(this._position, this._position + 2) === "\r\n") {
+      this._advance(2);
+      return this._position;
+    }
+    return -1;
+  }
+
 }
 
-export { parseRESP };
+export { SimpleString, Parser };
