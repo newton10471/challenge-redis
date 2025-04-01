@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest",
-    "dev": "tsx server.ts"
+    "dev": "tsx src/server.ts"
   },
   "keywords": [],
   "author": "",
