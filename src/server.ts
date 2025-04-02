@@ -1,37 +1,57 @@
-import net from 'net';
-import { Parser } from './parser.ts';
-import { Serializer } from './serializer.ts';
+import * as net from "node:net";
+import { Parser, SimpleString, RespError, BulkString, RespArray } from "./parser.ts";
 
-// Create a TCP server
-const server = net.createServer((socket) => {
-	// Instantiate the parser for this connection.
-	const parser = new Parser();
+const server = net.createServer((client) => {
+	console.log("client connected");
 
-	// Listen for complete commands parsed from incoming data.
-	parser.on('command', (command: string[]) => {
-		// Check that we received a command and that it is PING.
-		if (command.length > 0 && command[0].toUpperCase() === 'PING') {
-			// Respond with PONG using the Serializer.
-			const reply = Serializer.serialize("PONG");
-			socket.write(reply);
-		} else {
-			// For any unsupported command, send an error reply.
-			const reply = Serializer.serialize(new Error("ERR unknown command"));
-			socket.write(reply);
+	client.on("end", () => {
+		console.log("client disconnected");
+	});
+
+	client.on("data", (data: Buffer) => {
+		try {
+			const parser = new Parser(data);
+			const [msg, _] = parser.parseFrame();
+
+			// Check if the parsed message is an array (typical for commands)
+			if (msg instanceof RespArray) {
+				const arr = msg.data;
+				if (
+					arr &&
+					arr.length > 0 &&
+					arr[0] instanceof BulkString &&
+					arr[0].data?.toUpperCase() === "PING"
+				) {
+					client.write(new SimpleString("PONG").encode());
+					return;
+				}
+			}
+			// Also handle the cases where the command is sent as a BulkString or SimpleString.
+			else if (msg instanceof BulkString) {
+				if (msg.data?.toUpperCase() === "PING") {
+					client.write(new SimpleString("PONG").encode());
+					return;
+				}
+			} else if (msg instanceof SimpleString) {
+				if (msg.data.toUpperCase() === "PING") {
+					client.write(new SimpleString("PONG").encode());
+					return;
+				}
+			}
+
+			// For any other input, respond with an error.
+			client.write(new RespError("unknown command").encode());
+		} catch (err) {
+			console.error("Error processing data:", err);
+			client.write(new RespError("protocol error").encode());
 		}
-	});
-
-	// When data comes in from the client, feed it to the parser.
-	socket.on('data', (data: Buffer) => {
-		parser.feed(data);
-	});
-
-	socket.on('error', (err) => {
-		console.error('Socket error:', err);
 	});
 });
 
-// Start listening on the standard Redis port.
+server.on("error", (err) => {
+	throw err;
+});
+
 server.listen(6379, () => {
-	console.log('Redis clone server listening on port 6379');
+	console.log("server bound");
 });
