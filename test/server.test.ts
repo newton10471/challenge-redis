@@ -25,14 +25,13 @@ function sendCommand(command: string): Promise<string> {
 
 describe("RESP Server", () => {
     // Wait a bit before running tests to allow the server to start.
-    beforeAll((done) => {
-        setTimeout(done, 100);
+    beforeAll(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
     // If your server.ts exports the server instance, you can gracefully close it here.
-    afterAll((done) => {
-        // Example: server.close(done);
-        done();
+    afterAll(() => {
+        // Example: server.close();
     });
 
     it("should respond with PONG for a RESP Array command", async () => {
